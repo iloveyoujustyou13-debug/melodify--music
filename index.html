@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Uploader → CDN Link</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a0f;
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: #12121a;
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #1db954, #1ed760);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p.sub {
+            color: #aaa;
+            margin-bottom: 1.8rem;
+            font-size: 0.9rem;
+            border-left: 3px solid #1db954;
+            padding-left: 0.75rem;
+        }
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #ccc;
+            margin-bottom: 0.25rem;
+        }
+        input[type="text"],
+        input[type="file"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.65rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #1e1e2a;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        input:focus {
+            border-color: #1db954;
+            box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .file-input-wrapper {
+            background: #1a1a26;
+            border-radius: 10px;
+            padding: 0.4rem;
+            border: 1px dashed #444;
+        }
+        .file-input-wrapper input[type="file"] {
+            border: none;
+            padding: 0.4rem;
+            background: transparent;
+        }
+        .btn {
+            background: #1db954;
+            color: #000;
+            font-weight: 700;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        .btn:hover {
+            background: #1ed760;
+            transform: scale(1.01);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #1a1a2a;
+            border-radius: 12px;
+            border-left: 4px solid #1db954;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result a {
+            color: #1db954;
+            word-break: break-all;
+            text-decoration: none;
+        }
+        .result a:hover {
+            text-decoration: underline;
+        }
+        .error {
+            border-left-color: #ef4444 !important;
+        }
+        .error .label {
+            color: #ef4444;
+        }
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #1db954;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .token-note {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+        .token-note a {
+            color: #1db954;
+        }
+        @media (max-width: 600px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 GitHub → CDN Uploader</h1>
+        <p class="sub">
+            Upload your MP3 and cover image to a public GitHub repo and instantly get jsDelivr CDN links.
+            <br />All files will be stored in your repository.
+        </p>
+
+        <form id="uploadForm">
+            <!-- GitHub Credentials -->
+            <div class="form-group">
+                <label for="token">🔑 GitHub Personal Access Token</label>
+                <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxx" required />
+                <div class="token-note">
+                    Need a token? <a href="https://github.com/settings/tokens" target="_blank">Create one</a> with <strong>repo</strong> scope.
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="owner">Repository Owner (username)</label>
+                    <input type="text" id="owner" placeholder="your-username" required />
+                </div>
+                <div class="form-group">
+                    <label for="repo">Repository Name</label>
+                    <input type="text" id="repo" placeholder="melodify-songs" required />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="branch">Branch (default: main)</label>
+                <input type="text" id="branch" value="main" />
+            </div>
+
+            <!-- Song Metadata -->
+            <div class="row">
+                <div class="form-group">
+                    <label for="title">Song Title</label>
+                    <input type="text" id="title" placeholder="My Song" required />
+                </div>
+                <div class="form-group">
+                    <label for="artist">Artist</label>
+                    <input type="text" id="artist" placeholder="Artist Name" required />
+                </div>
+            </div>
+
+            <!-- File Inputs -->
+            <div class="form-group">
+                <label>🎵 Audio File (MP3, WEBM, WAV, OGG)</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="audioFile" accept=".mp3,.webm,.wav,.ogg" required />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>🖼️ Cover Image (PNG, JPG, WEBP)</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="imageFile" accept=".png,.jpg,.jpeg,.webp" required />
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">🚀 Upload & Get CDN Links</button>
+        </form>
+
+        <div id="result" class="result">
+            <div style="margin-bottom: 0.5rem; font-weight: 600; color: #1db954;">✅ Upload successful!</div>
+            <div><strong>Audio CDN Link:</strong><br /><a id="audioLink" href="#" target="_blank"></a></div>
+            <div style="margin-top: 0.5rem;"><strong>Image CDN Link:</strong><br /><a id="imageLink" href="#" target="_blank"></a></div>
+            <div style="margin-top: 1rem; background: #0d0d18; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; color: #aaa;">
+                💡 Copy these links and paste them into your Melodify Admin Panel (Audio URL & Cover Image URL).
+            </div>
+        </div>
+
+        <div id="errorResult" class="result error">
+            <div style="font-weight: 600; color: #ef4444;">❌ Upload failed</div>
+            <div id="errorMessage" style="color: #fca5a5; margin-top: 4px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        const errorDiv = document.getElementById('errorResult');
+        const errorMsg = document.getElementById('errorMessage');
+
+        // CDN link constructor
+        function buildCdnLink(owner, repo, branch, filename) {
+            return `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${filename}`;
+        }
+
+        // Upload a single file to GitHub
+        async function uploadFileToGitHub(token, owner, repo, branch, path, content, message) {
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+            const payload = {
+                message: message || `Upload ${path}`,
+                content: content, // base64 encoded
+                branch: branch
+            };
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'GitHub API error');
+            }
+            return await response.json();
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Hide previous results
+            resultDiv.classList.remove('show');
+            errorDiv.classList.remove('show');
+
+            // Gather inputs
+            const token = document.getElementById('token').value.trim();
+            const owner = document.getElementById('owner').value.trim();
+            const repo = document.getElementById('repo').value.trim();
+            const branch = document.getElementById('branch').value.trim() || 'main';
+            const title = document.getElementById('title').value.trim();
+            const artist = document.getElementById('artist').value.trim();
+            const audioFile = document.getElementById('audioFile').files[0];
+            const imageFile = document.getElementById('imageFile').files[0];
+
+            if (!token || !owner || !repo || !audioFile || !imageFile || !title || !artist) {
+                alert('Please fill all required fields and select both files.');
+                return;
+            }
+
+            // Prepare filenames (sanitize)
+            const audioExt = audioFile.name.split('.').pop();
+            const imageExt = imageFile.name.split('.').pop();
+            const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+            const safeArtist = artist.replace(/[^a-zA-Z0-9]/g, '_');
+            const audioFilename = `${safeTitle}_${safeArtist}.${audioExt}`;
+            const imageFilename = `${safeTitle}_${safeArtist}_cover.${imageExt}`;
+
+            // Convert files to base64
+            const readFileAsBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            };
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Uploading to GitHub...';
+
+                const [audioBase64, imageBase64] = await Promise.all([
+                    readFileAsBase64(audioFile),
+                    readFileAsBase64(imageFile)
+                ]);
+
+                // Upload audio
+                await uploadFileToGitHub(token, owner, repo, branch, audioFilename, audioBase64, `Add audio: ${title}`);
+                // Upload image
+                await uploadFileToGitHub(token, owner, repo, branch, imageFilename, imageBase64, `Add cover: ${title}`);
+
+                // Build CDN links
+                const audioCdn = buildCdnLink(owner, repo, branch, audioFilename);
+                const imageCdn = buildCdnLink(owner, repo, branch, imageFilename);
+
+                // Display results
+                document.getElementById('audioLink').href = audioCdn;
+                document.getElementById('audioLink').textContent = audioCdn;
+                document.getElementById('imageLink').href = imageCdn;
+                document.getElementById('imageLink').textContent = imageCdn;
+                resultDiv.classList.add('show');
+
+                // Optionally, you can auto-fill your Melodify admin form if it's on the same page.
+                // Here we just show the links.
+
+                submitBtn.innerHTML = '🚀 Upload & Get CDN Links';
+                submitBtn.disabled = false;
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = err.message || 'Unknown error. Check your token, repo details, and file sizes.';
+                errorDiv.classList.add('show');
+                submitBtn.innerHTML = '🚀 Upload & Get CDN Links';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
